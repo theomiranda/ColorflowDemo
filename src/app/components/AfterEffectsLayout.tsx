@@ -5,6 +5,7 @@ import Onboarding, {
   OnboardingGlow,
   type OnboardingStep,
 } from "./Onboarding";
+import WelcomeOverlay from "./WelcomeOverlay";
 
 interface Layer {
   id: string;
@@ -52,8 +53,9 @@ export default function AfterEffectsLayout() {
   const hasDragged = useRef(false);
 
   // Onboarding state: 0=select shape, 1=pick color, 2=deselect, 3=change bg, 4=done
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(0);
+  const [showWelcome, setShowWelcome] = useState(true);
 
   const dismissOnboarding = useCallback(() => {
     setShowOnboarding(false);
@@ -62,6 +64,12 @@ export default function AfterEffectsLayout() {
   const restartOnboarding = useCallback(() => {
     setOnboardingStep(0);
     setSelectedLayerId(null);
+    setShowOnboarding(true);
+  }, []);
+
+  const handleStartDemo = useCallback(() => {
+    setShowWelcome(false);
+    setOnboardingStep(0);
     setShowOnboarding(true);
   }, []);
 
@@ -213,7 +221,7 @@ export default function AfterEffectsLayout() {
         <span className="text-[#808080] text-xs">Layer</span>
         <span className="text-[#808080] text-xs">Effect</span>
         <div className="ml-auto">
-          {!showOnboarding && (
+          {!showOnboarding && !showWelcome && (
             <button
               onClick={restartOnboarding}
               className="p-1 hover:bg-[#404040] rounded transition-colors"
@@ -394,6 +402,9 @@ export default function AfterEffectsLayout() {
       {showOnboarding && (
         <Onboarding step={onboardingStep} onSkip={dismissOnboarding} />
       )}
+
+      {/* Welcome Overlay */}
+      {showWelcome && <WelcomeOverlay onStart={handleStartDemo} />}
     </div>
   );
 }
