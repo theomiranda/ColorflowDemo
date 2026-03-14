@@ -1,7 +1,10 @@
-import { useState, useRef, useEffect } from "react";
-import { Eye, EyeOff, ChevronDown } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Eye, EyeOff, ChevronDown, HelpCircle } from "lucide-react";
 import UiScript from "../../imports/UiScript";
-import Onboarding from "./Onboarding";
+import Onboarding, {
+  OnboardingGlow,
+  type OnboardingStep,
+} from "./Onboarding";
 
 interface Layer {
   id: string;
@@ -47,21 +50,61 @@ export default function AfterEffectsLayout() {
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
   const layerStartPos = useRef<{ x: number; y: number } | null>(null);
   const hasDragged = useRef(false);
-  const [showOnboarding, setShowOnboarding] = useState(true);
 
-  const handleColorChange = (color: string) => {
-    if (selectedLayerId) {
-      // Muda a cor do layer selecionado (mantém selecionado)
-      setLayers((prev) =>
-        prev.map((layer) =>
-          layer.id === selectedLayerId ? { ...layer, color } : layer
-        )
-      );
-    } else {
-      // Muda a cor do fundo
-      setBackgroundColor(color);
+  // Onboarding state: 0=select shape, 1=pick color, 2=deselect, 3=change bg, 4=done
+  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(0);
+
+  const dismissOnboarding = useCallback(() => {
+    setShowOnboarding(false);
+  }, []);
+
+  const restartOnboarding = useCallback(() => {
+    setOnboardingStep(0);
+    setSelectedLayerId(null);
+    setShowOnboarding(true);
+  }, []);
+
+  // Step 0 → 1: user selects a shape
+  const handleShapeSelect = useCallback(
+    (layerId: string) => {
+      setSelectedLayerId(layerId);
+      if (showOnboarding && onboardingStep === 0) {
+        setOnboardingStep(1);
+      }
+    },
+    [showOnboarding, onboardingStep]
+  );
+
+  // Step 2 → 3: user clicks empty background (deselects)
+  const handleBackgroundClick = useCallback(() => {
+    setSelectedLayerId(null);
+    if (showOnboarding && onboardingStep === 2) {
+      setOnboardingStep(3);
     }
-  };
+  }, [showOnboarding, onboardingStep]);
+
+  // Step 1 → 2 (color with shape) or Step 3 → 4 (color without shape = bg)
+  const handleColorChange = useCallback(
+    (color: string) => {
+      if (selectedLayerId) {
+        setLayers((prev) =>
+          prev.map((layer) =>
+            layer.id === selectedLayerId ? { ...layer, color } : layer
+          )
+        );
+        if (showOnboarding && onboardingStep === 1) {
+          setOnboardingStep(2);
+        }
+      } else {
+        setBackgroundColor(color);
+        if (showOnboarding && onboardingStep === 3) {
+          setOnboardingStep(4);
+        }
+      }
+    },
+    [selectedLayerId, showOnboarding, onboardingStep]
+  );
 
   const toggleVisibility = (id: string) => {
     setLayers((prev) =>
@@ -71,17 +114,10 @@ export default function AfterEffectsLayout() {
     );
   };
 
-  const handleShapeMouseDown = (
-    e: React.MouseEvent,
-    layerId: string
-  ) => {
+  const handleShapeMouseDown = (e: React.MouseEvent, layerId: string) => {
     e.stopPropagation();
-    
-    // Encontra o layer
     const layer = layers.find((l) => l.id === layerId);
     if (!layer) return;
-    
-    // Inicia o arrasto
     setDraggingLayerId(layerId);
     hasDragged.current = false;
     dragStartPos.current = { x: e.clientX, y: e.clientY };
@@ -90,30 +126,32 @@ export default function AfterEffectsLayout() {
 
   const handleShapeClick = (e: React.MouseEvent, layerId: string) => {
     e.stopPropagation();
-    // Só seleciona se não houve arrasto
     if (!hasDragged.current) {
-      setSelectedLayerId(layerId);
+      handleShapeSelect(layerId);
     }
   };
 
-  const handleBackgroundClick = () => {
-    setSelectedLayerId(null);
-  };
-
-  // Efeito para lidar com mousemove e mouseup
+  // Drag handling
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!draggingLayerId || !dragStartPos.current || !layerStartPos.current) return;
+      if (
+        !draggingLayerId ||
+        !dragStartPos.current ||
+        !layerStartPos.current
+      )
+        return;
 
       const deltaX = e.clientX - dragStartPos.current.x;
       const deltaY = e.clientY - dragStartPos.current.y;
 
-      // Só começa a arrastar após mover 3 pixels
-      if (!hasDragged.current && (Math.abs(deltaX) <= 3 && Math.abs(deltaY) <= 3)) {
+      if (
+        !hasDragged.current &&
+        Math.abs(deltaX) <= 3 &&
+        Math.abs(deltaY) <= 3
+      ) {
         return;
       }
 
-      // Marca como arrastado
       if (!hasDragged.current) {
         hasDragged.current = true;
       }
@@ -121,16 +159,12 @@ export default function AfterEffectsLayout() {
       const startX = layerStartPos.current.x;
       const startY = layerStartPos.current.y;
 
-      // Atualiza a posição do layer
       setLayers((prev) =>
         prev.map((layer) =>
           layer.id === draggingLayerId
             ? {
                 ...layer,
-                position: {
-                  x: startX + deltaX,
-                  y: startY + deltaY,
-                },
+                position: { x: startX + deltaX, y: startY + deltaY },
               }
             : layer
         )
@@ -141,7 +175,6 @@ export default function AfterEffectsLayout() {
       setDraggingLayerId(null);
       dragStartPos.current = null;
       layerStartPos.current = null;
-      // Reset hasDragged após um delay para o onClick poder verificar
       setTimeout(() => {
         hasDragged.current = false;
       }, 50);
@@ -150,7 +183,6 @@ export default function AfterEffectsLayout() {
     if (draggingLayerId) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
-
       return () => {
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
@@ -158,15 +190,39 @@ export default function AfterEffectsLayout() {
     }
   }, [draggingLayerId]);
 
+  // Glow targets: steps 0,2 = comp viewport; steps 1,3 = right panel
+  const glowComp =
+    showOnboarding && (onboardingStep === 0 || onboardingStep === 2);
+  const glowPanel =
+    showOnboarding && (onboardingStep === 1 || onboardingStep === 3);
+
+  const glowCompColor =
+    onboardingStep === 0 ? "#5c9eff" : "#f0a030";
+  const glowPanelColor =
+    onboardingStep === 1 ? "#45ea7f" : "#c084fc";
+
   return (
-    <div className="w-full h-full bg-[#1c1c1c] flex flex-col overflow-hidden">
+    <div className="w-full h-full bg-[#1c1c1c] flex flex-col overflow-hidden relative">
       {/* Top Menu Bar */}
       <div className="h-8 bg-[#232323] border-b border-[#0a0a0a] flex items-center px-3 gap-4">
-        <span className="text-[#b0b0b0] text-xs font-medium">Composition</span>
+        <span className="text-[#b0b0b0] text-xs font-medium">
+          Composition
+        </span>
         <span className="text-[#808080] text-xs">File</span>
         <span className="text-[#808080] text-xs">Edit</span>
         <span className="text-[#808080] text-xs">Layer</span>
         <span className="text-[#808080] text-xs">Effect</span>
+        <div className="ml-auto">
+          {!showOnboarding && (
+            <button
+              onClick={restartOnboarding}
+              className="p-1 hover:bg-[#404040] rounded transition-colors"
+              title="Show tutorial"
+            >
+              <HelpCircle className="size-3.5 text-[#666] hover:text-[#aaa]" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Main Content Area */}
@@ -186,71 +242,87 @@ export default function AfterEffectsLayout() {
 
           {/* Viewport */}
           <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
-            <div
-              className="relative rounded-lg shadow-2xl transition-colors duration-300"
-              style={{
-                backgroundColor,
-                width: "600px",
-                height: "400px",
-                border: "1px solid #404040",
-              }}
-              onClick={handleBackgroundClick}
+            <OnboardingGlow
+              active={glowComp}
+              color={glowCompColor}
             >
-              {/* Render Layers */}
-              {layers
-                .slice()
-                .reverse()
-                .map((layer) => {
-                  if (!layer.visible) return null;
-                  return (
-                    <div
-                      key={layer.id}
-                      className={`absolute rounded transition-all duration-200 cursor-move select-none ${
-                        selectedLayerId === layer.id
-                          ? "ring-2 ring-[#5c9eff] ring-offset-2 ring-offset-transparent"
-                          : ""
-                      } ${draggingLayerId === layer.id ? "cursor-grabbing" : "cursor-grab"}`}
-                      style={{
-                        backgroundColor: layer.color,
-                        left: `${layer.position.x}px`,
-                        top: `${layer.position.y}px`,
-                        width: `${layer.size.width}px`,
-                        height: `${layer.size.height}px`,
-                      }}
-                      onMouseDown={(e) => handleShapeMouseDown(e, layer.id)}
-                      onClick={(e) => handleShapeClick(e, layer.id)}
-                    />
-                  );
-                })}
-
-              {/* Grid overlay */}
               <div
-                className="absolute inset-0 pointer-events-none opacity-10"
+                className="relative rounded-lg shadow-2xl transition-colors duration-300"
                 style={{
-                  backgroundImage:
-                    "linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)",
-                  backgroundSize: "50px 50px",
+                  backgroundColor,
+                  width: "600px",
+                  height: "400px",
+                  border: "1px solid #404040",
                 }}
-              />
-            </div>
+                onClick={handleBackgroundClick}
+              >
+                {/* Render Layers */}
+                {layers
+                  .slice()
+                  .reverse()
+                  .map((layer) => {
+                    if (!layer.visible) return null;
+                    return (
+                      <div
+                        key={layer.id}
+                        className={`absolute rounded transition-all duration-200 cursor-move select-none ${
+                          selectedLayerId === layer.id
+                            ? "ring-2 ring-[#5c9eff] ring-offset-2 ring-offset-transparent"
+                            : ""
+                        } ${
+                          draggingLayerId === layer.id
+                            ? "cursor-grabbing"
+                            : "cursor-grab"
+                        }`}
+                        style={{
+                          backgroundColor: layer.color,
+                          left: `${layer.position.x}px`,
+                          top: `${layer.position.y}px`,
+                          width: `${layer.size.width}px`,
+                          height: `${layer.size.height}px`,
+                        }}
+                        onMouseDown={(e) => handleShapeMouseDown(e, layer.id)}
+                        onClick={(e) => handleShapeClick(e, layer.id)}
+                      />
+                    );
+                  })}
+
+                {/* Grid overlay */}
+                <div
+                  className="absolute inset-0 pointer-events-none opacity-10"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)",
+                    backgroundSize: "50px 50px",
+                  }}
+                />
+              </div>
+            </OnboardingGlow>
           </div>
         </div>
 
         {/* Right Panel - Script UI */}
-        <div className="w-[680px] bg-[#232323] border-l border-[#0a0a0a] flex flex-col">
-          {/* Panel Header */}
-          <div className="h-9 bg-[#2a2a2a] border-b border-[#0a0a0a] flex items-center px-3">
-            <ChevronDown className="size-4 text-[#b0b0b0] mr-2" />
-            <span className="text-[#b0b0b0] text-xs font-medium">
-              Color Flow Script
-            </span>
-          </div>
+        <OnboardingGlow
+          active={glowPanel}
+          color={glowPanelColor}
+          rounded="rounded-none"
+          className="w-[680px] flex flex-col"
+        >
+          <div className="bg-[#232323] border-l border-[#0a0a0a] flex flex-col flex-1">
+            {/* Panel Header */}
+            <div className="h-9 bg-[#2a2a2a] border-b border-[#0a0a0a] flex items-center px-3">
+              <ChevronDown className="size-4 text-[#b0b0b0] mr-2" />
+              <span className="text-[#b0b0b0] text-xs font-medium">
+                Color Flow Script
+              </span>
+            </div>
 
-          {/* Script Content */}
-          <div className="flex-1 overflow-auto p-6 flex items-center justify-center">
-            <UiScript onColorChange={handleColorChange} />
+            {/* Script Content */}
+            <div className="flex-1 overflow-auto p-6 flex items-center justify-center">
+              <UiScript onColorChange={handleColorChange} />
+            </div>
           </div>
-        </div>
+        </OnboardingGlow>
       </div>
 
       {/* Bottom Timeline */}
@@ -274,7 +346,7 @@ export default function AfterEffectsLayout() {
                   ? "bg-[#3d5a80]"
                   : "hover:bg-[#2a2a2a]"
               }`}
-              onClick={() => setSelectedLayerId(layer.id)}
+              onClick={() => handleShapeSelect(layer.id)}
             >
               {/* Visibility Toggle */}
               <button
@@ -318,9 +390,9 @@ export default function AfterEffectsLayout() {
         </div>
       </div>
 
-      {/* Onboarding Overlay */}
+      {/* Onboarding */}
       {showOnboarding && (
-        <Onboarding onComplete={() => setShowOnboarding(false)} />
+        <Onboarding step={onboardingStep} onSkip={dismissOnboarding} />
       )}
     </div>
   );
