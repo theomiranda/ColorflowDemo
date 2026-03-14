@@ -1,7 +1,4 @@
-import { useState } from "react";
 import svgPaths from "./svg-bnrp5u04is";
-import imgImage2 from "figma:asset/8c07bfc0f18877526650cd2e09de9954802612a3.png";
-import imgChatGptImage28DeAbrDe20251623421 from "figma:asset/0c645feb2c7e66ebf2e4150f53a3fa49bfc02e66.png";
 
 interface UiScriptProps {
   onColorChange: (color: string) => void;
@@ -131,42 +128,6 @@ function Group({ onColorClick }: { onColorClick: (color: string) => void }) {
   );
 }
 
-function Group2() {
-  return (
-    <div className="absolute contents left-[181px] top-[146px]">
-      <div className="absolute bg-[#0e0e0e] left-[181px] rounded-[3px] size-[23px] top-[151px]">
-        <div aria-hidden="true" className="absolute border border-[#303030] border-solid inset-[-1px] pointer-events-none rounded-[4px]" />
-      </div>
-      <div className="absolute h-[34px] left-[185px] top-[146px] w-[16px]" data-name="ChatGPT Image 28 de abr. de 2025, 16_23_42 1">
-        <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
-          <div className="absolute inset-0 overflow-hidden">
-            <img alt="" className="absolute h-full left-[-109.76%] max-w-none top-0 w-[209.76%]" src={imgChatGptImage28DeAbrDe20251623421} />
-          </div>
-          <div className="absolute bg-[#9a9a9a] inset-0 mix-blend-darken" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Group1() {
-  return (
-    <div className="absolute contents left-[151px] top-[148px]">
-      <div className="absolute bg-[#0e0e0e] left-[151px] rounded-[3px] size-[23px] top-[151px]">
-        <div aria-hidden="true" className="absolute border border-[#303030] border-solid inset-[-1px] pointer-events-none rounded-[4px]" />
-      </div>
-      <div className="absolute h-[29px] left-[155px] top-[148px] w-[15px]" data-name="ChatGPT Image 28 de abr. de 2025, 16_23_42 2">
-        <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
-          <div className="absolute inset-0 overflow-hidden">
-            <img alt="" className="absolute h-full left-[-1.43%] max-w-none top-0 w-[194.29%]" src={imgChatGptImage28DeAbrDe20251623421} />
-          </div>
-          <div className="absolute bg-[#9a9a9a] inset-0 mix-blend-darken" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function UiScript({ onColorChange }: UiScriptProps) {
   const handleColorClick = (color: string) => {
     onColorChange(color);
@@ -241,24 +202,6 @@ export default function UiScript({ onColorChange }: UiScriptProps) {
         </svg>
       </div>
       <Group onColorClick={handleColorClick} />
-      <div className="absolute h-[14px] left-[162px] top-[75px] w-[15px]" data-name="image 2">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <img alt="" className="absolute h-[2192.86%] left-[-1046.67%] max-w-none top-[-450%] w-[1440%]" src={imgImage2} />
-        </div>
-      </div>
-      <div className="absolute h-[14px] left-[135px] top-[75px] w-[15px]" data-name="image 6">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <img alt="" className="absolute h-[2192.86%] left-[-847.15%] max-w-none top-[-450%] w-[1440%]" src={imgImage2} />
-        </div>
-      </div>
-      <div className="absolute left-[188px] size-[15px] top-[75px]" data-name="image 3">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <img alt="" className="absolute h-[2046.67%] left-[-1220%] max-w-none top-[-420%] w-[1440%]" src={imgImage2} />
-        </div>
-      </div>
-      <div className="absolute left-[155px] size-[15px] top-[155px]" data-name="image 5" />
-      <Group2 />
-      <Group1 />
     </div>
   );
 }
