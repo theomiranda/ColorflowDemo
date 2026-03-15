@@ -52,7 +52,7 @@ export default function AfterEffectsLayout() {
   const layerStartPos = useRef<{ x: number; y: number } | null>(null);
   const hasDragged = useRef(false);
 
-  // Onboarding state: 0=select shape, 1=pick color, 2=deselect, 3=change bg, 4=done
+  // Onboarding state: 0=select shape, 1=pick color, 2=randomize, 3=deselect, 4=change bg, 5=done
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>(0);
   const [showWelcome, setShowWelcome] = useState(true);
@@ -84,15 +84,15 @@ export default function AfterEffectsLayout() {
     [showOnboarding, onboardingStep]
   );
 
-  // Step 2 → 3: user clicks empty background (deselects)
+  // Step 3 → 4: user clicks empty background (deselects)
   const handleBackgroundClick = useCallback(() => {
     setSelectedLayerId(null);
-    if (showOnboarding && onboardingStep === 2) {
-      setOnboardingStep(3);
+    if (showOnboarding && onboardingStep === 3) {
+      setOnboardingStep(4);
     }
   }, [showOnboarding, onboardingStep]);
 
-  // Step 1 → 2 (color with shape) or Step 3 → 4 (color without shape = bg)
+  // Step 1 → 2 (color with shape) or Step 2 → 3 (randomize) or Step 4 → 5 (color without shape = bg)
   const handleColorChange = useCallback(
     (color: string) => {
       if (selectedLayerId) {
@@ -103,11 +103,13 @@ export default function AfterEffectsLayout() {
         );
         if (showOnboarding && onboardingStep === 1) {
           setOnboardingStep(2);
+        } else if (showOnboarding && onboardingStep === 2) {
+          setOnboardingStep(3);
         }
       } else {
         setBackgroundColor(color);
-        if (showOnboarding && onboardingStep === 3) {
-          setOnboardingStep(4);
+        if (showOnboarding && onboardingStep === 4) {
+          setOnboardingStep(5);
         }
       }
     },
@@ -198,16 +200,16 @@ export default function AfterEffectsLayout() {
     }
   }, [draggingLayerId]);
 
-  // Glow targets: steps 0,2 = comp viewport; steps 1,3 = right panel
+  // Glow targets: steps 0,3 = comp viewport; steps 1,2,4 = right panel
   const glowComp =
-    showOnboarding && (onboardingStep === 0 || onboardingStep === 2);
+    showOnboarding && (onboardingStep === 0 || onboardingStep === 3);
   const glowPanel =
-    showOnboarding && (onboardingStep === 1 || onboardingStep === 3);
+    showOnboarding && (onboardingStep === 1 || onboardingStep === 2 || onboardingStep === 4);
 
   const glowCompColor =
     onboardingStep === 0 ? "#5c9eff" : "#f0a030";
   const glowPanelColor =
-    onboardingStep === 1 ? "#45ea7f" : "#c084fc";
+    onboardingStep === 1 ? "#45ea7f" : onboardingStep === 2 ? "#6cb2d2" : "#c084fc";
 
   return (
     <div className="w-full h-full bg-[#1c1c1c] flex flex-col overflow-hidden relative">

@@ -6,10 +6,11 @@ import {
   MousePointerClick,
   PaintBucket,
   Check,
+  Shuffle,
 } from "lucide-react";
 
-// 0 = select shape, 1 = pick color, 2 = deselect, 3 = change bg, 4 = done
-export type OnboardingStep = 0 | 1 | 2 | 3 | 4;
+// 0 = select shape, 1 = pick color, 2 = try randomize, 3 = deselect, 4 = change bg, 5 = done
+export type OnboardingStep = 0 | 1 | 2 | 3 | 4 | 5;
 
 interface OnboardingProps {
   step: OnboardingStep;
@@ -96,6 +97,13 @@ const STEP_CONFIG = [
     title: "Now pick a color from the palette",
     hint: "It will apply to the selected shape",
     accent: "#45ea7f",
+    handDir: "right" as const,
+  },
+  {
+    icon: Shuffle,
+    title: "Click the ∞ button to randomize the color",
+    hint: "It picks a random color from the palette for the selected shape",
+    accent: "#6cb2d2",
     handDir: "right" as const,
   },
   {
@@ -345,7 +353,7 @@ export default function Onboarding({ step, onSkip }: OnboardingProps) {
         {step >= 0 && step < TOTAL_STEPS && (
           <StepCard key={`s${step}`} step={step} onSkip={onSkip} />
         )}
-        {step === 4 && <SuccessBanner key="done" onDone={onSkip} />}
+        {step === 5 && <SuccessBanner key="done" onDone={onSkip} />}
       </AnimatePresence>
     </div>
   );
